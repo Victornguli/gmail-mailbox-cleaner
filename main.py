@@ -81,7 +81,7 @@ def getMessage(service, message_id, user_id, format=None, **kwargs):
 
 
 def constructFilter(subject=None):
-    """Constructs a filter to be passed to the getMessagesList function"""
+    """Constructs a filter to be passed to the getMessagesList function. Currently only applies subject filter."""
     try:
         if subject is not None:
             subject_text = 'subject:\"%s\"'%subject[0]
@@ -97,7 +97,6 @@ def constructFilter(subject=None):
 def batchDelete(service, message_ids, user_id, **kwargs):
     """Deletes multiple messages given the message_ids"""
     try:
-        kwargs.update(da=json.dumps(message_ids))
         deleted_messages = service.users().messages().batchDelete(userId=user_id, body=message_ids).execute()
     except Exception as ex:
         print('An error occurred in batchDelete %s' % str(ex))
@@ -108,17 +107,12 @@ def main():
     """Main execution flow"""
     credentials = getCredentials()
     service = buildService(credentials)
+
+    # Add custom filters e.g the sender email, email subject to be applied in the gmail filter, etc
     filters = {
-        "from": "no-reply@financeplan.biz",
+        "from": "target@email.test",
         "subject": [
-                "Reconciliation Reminder",
-                "Debt Collection Data",
-                "Balance Topup Reminder",
-                "Loan Reminder Results",
-                "Statement Credit Scoring Failure",
-                "Daily Debt Collection Loan Repayments",
-                "Weekly Debt Collection Loan Repayments",
-                "Monthly Debt Collection Loan Repayments"
+            "Daily Newsletter Mail"
             ]
     }
     query = constructFilter(filters.get('subject'))
@@ -145,12 +139,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-# subject list = [
-#     Reconciliation Remainder
-#     Debt Collection Data
-#     Balance Topup Remainder
-#     Loan Remainder Results 
-# ]
