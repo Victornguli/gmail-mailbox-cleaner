@@ -1,10 +1,15 @@
 from __future__ import print_function
 import pickle
+import logging
 import json
 import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+
+
+# logging.basicConfig( format = '%(asctime)s  %(levelname)-10s %(processName)s  %(name)s %(message)s', datefmt =  "%Y-%m-%d-%H-%M-%S")
+
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = [
@@ -64,7 +69,7 @@ def getMessageList(service, user_id, page_token = None, max_results = None, q=No
         messages = service.users().messages().list(userId=user_id, **kwargs).execute()
         return messages
     except Exception as ex:
-        print('An error occurred in geMessageList %s'%str(ex)) # TODO Add logging
+        logging.exception('GetMessageList Exception: %s'%ex)
     return None
 
 
@@ -76,7 +81,7 @@ def getMessage(service, message_id, user_id, format=None, **kwargs):
         message = service.users().messages().get(userId=user_id, id=message_id, **kwargs).execute()
         return message
     except Exception as ex:
-        print('An error occurred in geMessage') # TODO Add logging
+        logging.exception('GetMessage Exception: %s'%ex)
     return None
 
 
@@ -90,7 +95,7 @@ def constructFilter(subject=None):
                     subject_text += ' OR \"%s\"'%i
             return subject_text
     except Exception as ex:
-        print ('An error occurred in construct Filter')  # TODO Add logging
+        logging.exception('ConstructFilter Exception: %s'%ex)
     return ''
 
 
@@ -99,7 +104,7 @@ def batchDelete(service, message_ids, user_id, **kwargs):
     try:
         deleted_messages = service.users().messages().batchDelete(userId=user_id, body=message_ids).execute()
     except Exception as ex:
-        print('An error occurred in batchDelete %s' % str(ex))
+        logging.exception('BatchFilter Exception: %s'%ex)
     return 'Failed'
 
 
