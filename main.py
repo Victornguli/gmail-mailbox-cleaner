@@ -9,7 +9,7 @@ from google.auth.transport.requests import Request
 
 
 logging.basicConfig( format = '%(asctime)s  %(levelname)-10s %(processName)s  %(name)s %(message)s', datefmt =  "%Y-%m-%d-%H-%M-%S")
-
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = [
@@ -85,8 +85,8 @@ def getMessage(service, message_id, user_id, format=None, **kwargs):
     return None
 
 
-def constructFilter(subject=None):
-    """Constructs a filter to be passed to the getMessagesList function. Currently only applies subject filter."""
+def formatSubject(subject=None):
+    """Constructs a subject filter to be passed to the constructQuery function"""
     try:
         if subject is not None:
             subject_text = 'subject:\"%s\"'%subject[0]
@@ -97,6 +97,30 @@ def constructFilter(subject=None):
     except Exception as ex:
         logging.exception('ConstructFilter Exception: %s'%ex)
     return ''
+
+
+def formatQuery(filters = None):
+    filter_query = ''
+    try:
+        if filters is not None:
+            subject = filters.get('subject', None)
+            sender = filters.get('from', None)
+            if subject is not None:
+                subject_text = 'subject:\"%s\"'%subject[0]
+                if len(subject) > 1:
+                    for i in subject[1:]:
+                        subject_text += ' OR \"%s\"'%i
+                filter_query += subject_text
+            if sender is not None:
+                sender_text = ' from:\"%s\"'%sender.pop(0)
+                for i in sender:
+                    sender_text += ' OR \"%s\"'%i
+                filter_query += sender_text
+            print(filter_query)
+            return filter_query
+    except Exception as ex:
+        logging.exception('ConstructFilter Exception: %s'%ex)
+    return filter_query
 
 
 def batchDelete(service, message_ids, user_id, **kwargs):
@@ -110,36 +134,43 @@ def batchDelete(service, message_ids, user_id, **kwargs):
 
 def main():
     """Main execution flow"""
+    print ('########################################### \n')
     credentials = getCredentials()
     service = buildService(credentials)
 
-    # Add custom filters e.g the sender email, email subject to be applied in the gmail filter, etc
+    # Add custom filters e.g the sender email and subject(s) to be applied in the gmail filter
     filters = {
-        "from": "target@email.test",
-        "subject": [
-            "Daily Newsletter Mail"
-            ]
+        "from": ["noreply@youtube.com", "digest-noreply@quora.com", "no-reply@mail.instagram.com", "info@updates.intherooms.com"
+        "trending-stories-noreply@quora.com", "noreply@medium.com", "noreply-utos@google.com", "hello@stackshare.io"],
     }
-    query = constructFilter(filters.get('subject'))
+    query = formatQuery(filters)
     # Retrives messages
     messages_response = getMessageList(service=service, user_id='me', max_results=500, q=query)
     message_ids = []
+    messages_len = 0
     if messages_response is not None:
+        messages = messages_response.get('messages', '')
+        messages_len += len(messages)
+        if messages:
+            message_ids = [message.get('id', None) for message in messages]
+            # batchDelete(service=service, user_id='me', message_ids={"ids": message_ids})
+            # print('Batch deleted %s messages'%len(messages))
+            print('Fetched %s messages' %len(messages))
          # If Message list has a nextPage token call getMessageList
         while (messages_response.get('nextPageToken', None)):
+            # print(messages_response.get('nextPageToken', None))
             messages_response = getMessageList(
-                service=service, user_id='me', page_token = messages_response.get('nextPageToken'), max_results=5, q=query)
+                service=service, user_id='me', page_token = messages_response.get('nextPageToken'), max_results=500, q=query)
             if messages_response is not None:
-                messages = messages_response.get('messages', None)
-                if messages is not None:
-                    message_ids += [message.get('id', None) for message in messages]
-                    batchDelete(service=service, user_id='me', message_ids={"ids": message_ids})
-        if messages_response is not None:
-            messages = messages_response.get('messages', None)
-            if messages is not None:
-                message_ids += [message.get('id', None) for message in messages]
-                batchDelete(service=service, user_id='me', message_ids={"ids": message_ids})
-        print('Deleted %s messages successfully'%len(message_ids))
+                messages = messages_response.get('messages', '')
+                messages_len += len(messages)
+                if messages:
+                    message_ids = [message.get('id', None) for message in messages]
+                    # batchDelete(service=service, user_id='me', message_ids={"ids": message_ids})
+                    # print('Batch deleted %s messages'%len(messages))
+                    print('Fetched %s messages' %len(messages))
+        # print('Batch delete is complete. %s messages successfully deleted'%messages_len)
+        print('Message fetch complete. %s messages found' %messages_len)
 
 
 if __name__ == '__main__':
