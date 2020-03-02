@@ -17,25 +17,10 @@ SCOPES = [
     'https://mail.google.com/'
     ]
 
-# FILTERS = {
-#     "from": ["no-reply@financeplan.biz"],
-#     "subject": [
-#         "Reconciliation Reminder",
-#         "Debt Collection Data",
-#         "Balance Topup Reminder",
-#         "Loan Reminder Results",
-#         "Statement Credit Scoring Failure",
-#         "Daily Debt Collection Loan Repayments",
-#         "Weekly Debt Collection Loan Repayments",
-#         "Monthly Debt Collection Loan Repayments",
-#         "Service Restoration",
-#         "Invoice Payment"
-#     ]
-# }
-
-
 # Add custom filters e.g the sender email and subject(s) to be applied to the G-mail filter
+# These filters will batchDelete messages from the respective senders
 FILTERS = {
+    "suffix": "OR",  # Required to construct a query like subject: s1 OR s2 OR s3
     "from": [
       "noreply@youtube.com", "digest-noreply@quora.com",
       "no-reply@mail.instagram.com", "info@updates.intherooms.com"
@@ -113,23 +98,33 @@ def getMessage(service, message_id, user_id, format=None, **kwargs):
     return None
 
 
+def construct_filter_string(filters, filter_name, suffix):
+    """
+    Constructs a query string for a given filter. E.g with suffix = 'OR' and subjects 'work' and 'report' the query
+    generated would be 'subject: work OR report'
+    """
+    filter_string = ''
+    try:
+        filter_string = ' %s:\"%s\"' % (filter_name, filters.pop())
+        for filter_s in filters:
+            filter_string += ' %s \"%s\"' % (suffix, filter_s)
+        return filter_string
+    except Exception as ex:
+        logging.exception('Construct Filter String Exception : %s' % ex)
+    return filter_string
+
+
 def formatQuery(filters = None):
     filter_query = ''
     try:
         if filters is not None:
             subject = filters.get('subject', None)
             sender = filters.get('from', None)
+            suffix = filters.get('suffix', 'OR')
             if subject is not None:
-                subject_text = 'subject:\"%s\"' % subject[0]
-                if len(subject) > 1:
-                    for i in subject[1:]:
-                        subject_text += ' OR \"%s\"' % i
-                filter_query += subject_text
+                filter_query += construct_filter_string(subject, 'subject', suffix)
             if sender is not None:
-                sender_text = ' from:\"%s\"' % sender.pop(0)
-                for i in sender:
-                    sender_text += ' OR \"%s\"' % i
-                filter_query += sender_text
+                filter_query += construct_filter_string(sender, 'from', suffix)
             print(filter_query)
             return filter_query
     except Exception as ex:
@@ -205,6 +200,7 @@ def main():
     print('########################################### \n')
     credentials = getCredentials()
     service = buildService(credentials)
+    # formatQuery(FILTERS)
     execute_batch_delete(FILTERS, service, 500)
 
 

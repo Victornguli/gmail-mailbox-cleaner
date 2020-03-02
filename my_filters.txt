@@ -1,0 +1,13 @@
+filters = {
+    "from": "no-reply@financeplan.biz",
+    "subject": [
+            "Reconciliation Reminder",
+            "Debt Collection Data",
+            "Balance Topup Reminder",
+            "Loan Reminder Results",
+            "Statement Credit Scoring Failure",
+            "Daily Debt Collection Loan Repayments",
+            "Weekly Debt Collection Loan Repayments",
+            "Monthly Debt Collection Loan Repayments"
+        ]
+}
