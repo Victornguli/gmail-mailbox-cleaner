@@ -17,20 +17,37 @@ SCOPES = [
     'https://mail.google.com/'
     ]
 
-# Add custom filters e.g the sender email and subject(s) to be applied to the G-mail filter
-# These filters will batchDelete messages from the respective senders
 FILTERS = {
     "suffix": "OR",  # Required to construct a query like subject: s1 OR s2 OR s3
-    "from": [
-      "noreply@youtube.com", "digest-noreply@quora.com",
-      "no-reply@mail.instagram.com", "info@updates.intherooms.com"
-      "trending-stories-noreply@quora.com", "noreply@medium.com",
-      "noreply-utos@google.com", "hello@stackshare.io"
+    "from": ["no-reply@financeplan.biz"],
+    "subject": [
+        "Reconciliation Reminder",
+        "Debt Collection Data",
+        "Balance Topup Reminder",
+        "Loan Reminder Results",
+        "Statement Credit Scoring Failure",
+        "Daily Debt Collection Loan Repayments",
+        "Weekly Debt Collection Loan Repayments",
+        "Monthly Debt Collection Loan Repayments",
+        "Service Restoration",
+        "Invoice Payment"
     ]
 }
 
+# Add custom filters e.g the sender email and subject(s) to be applied to the G-mail filter
+# These filters will batchDelete messages from the respective senders
+# FILTERS = {
+#     "suffix": "OR",  # Required to construct a query like subject: s1 OR s2 OR s3
+#     "from": [
+#       "noreply@youtube.com", "digest-noreply@quora.com",
+#       "no-reply@mail.instagram.com", "info@updates.intherooms.com"
+#       "trending-stories-noreply@quora.com", "noreply@medium.com",
+#       "noreply-utos@google.com", "hello@stackshare.io"
+#     ]
+# }
 
-def getCredentials():
+
+def get_credentials():
     """Retrieves user credentials for auth"""
     creds = None
     if os.path.exists('token.pickle'):
@@ -50,7 +67,7 @@ def getCredentials():
     return creds
 
 
-def buildService(creds):
+def build_service(creds):
     """Builds the GMAIL API service given the supplied credentials"""
     service = None
     if creds is not None:
@@ -100,8 +117,8 @@ def getMessage(service, message_id, user_id, format=None, **kwargs):
 
 def construct_filter_string(filters, filter_name, suffix):
     """
-    Constructs a query string for a given filter. E.g with suffix = 'OR' and subjects 'work' and 'report' the query
-    generated would be 'subject: work OR report'
+    Constructs a query string for a given filter. E.g with suffix = 'OR' and filter_name = 'subject' with the subjects
+    'work' and 'report' the query generated would be 'subject: work OR report'
     """
     filter_string = ''
     try:
@@ -132,7 +149,7 @@ def formatQuery(filters = None):
     return filter_query
 
 
-def batchDelete(service, message_ids, user_id, **kwargs):
+def batch_delete(service, message_ids, user_id, **kwargs):
     """Deletes multiple messages given the message_ids"""
     try:
         service.users().messages().batchDelete(userId = user_id, body = message_ids).execute()
@@ -164,9 +181,9 @@ def execute_batch_delete(filters, service, max_results = 500):
             messages_len += len(messages)
             if messages:
                 message_ids = get_message_ids(messages)
-                batch_action = batchDelete(service = service, user_id = 'me', message_ids = {"ids": message_ids})
+                batch_action = batch_delete(service = service, user_id = 'me', message_ids = {"ids": message_ids})
                 if batch_action:
-                    print('Batch deleted %s messages' % len(messages))
+                    print('%s messages deleted' % len(messages))
                 else:
                     print('Batch delete failed')
 
@@ -181,10 +198,10 @@ def execute_batch_delete(filters, service, max_results = 500):
                     messages_len += len(messages)
                     if messages:
                         message_ids = get_message_ids(messages)
-                        batch_action = batchDelete(
+                        batch_action = batch_delete(
                             service = service, user_id = 'me', message_ids = {"ids": message_ids})
                         if batch_action:
-                            print('Batch deleted %s messages' % len(messages))
+                            print('%s messages deleted' % len(messages))
                         else:
                             print('Batch delete failed')
                         # print('Fetched %s messages' % len(messages))
@@ -198,8 +215,8 @@ def execute_batch_delete(filters, service, max_results = 500):
 def main():
     """Main execution flow"""
     print('########################################### \n')
-    credentials = getCredentials()
-    service = buildService(credentials)
+    credentials = get_credentials()
+    service = build_service(credentials)
     # formatQuery(FILTERS)
     execute_batch_delete(FILTERS, service, 500)
 
